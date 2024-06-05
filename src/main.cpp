@@ -36,11 +36,12 @@ void onChange();
 void sendPacket();
 byte calculateCRC(const byte *data, byte length);
 void processCommand(const String &command);
-void reportTrigger(int pin);
+void reportInputChange(int pin, bool state);
 
 // Global variables
 String comdata = "";
 int inputStates[6] = {0};
+int previousInputStates[6] = {0}; // 儲存先前的輸入狀態以檢測變化
 float voltageADC[2] = {0};
 
 int outputStates[4] = {0};
@@ -94,12 +95,15 @@ void setupIO()
 void readInputs()
 {
   // Read input states
-  inputStates[0] = !digitalRead(PIN_X0);
-  inputStates[1] = !digitalRead(PIN_X1);
-  inputStates[2] = !digitalRead(PIN_X2);
-  inputStates[3] = !digitalRead(PIN_X3);
-  inputStates[4] = !digitalRead(PIN_X4);
-  inputStates[5] = !digitalRead(PIN_X5);
+  for (int i = 0; i < 6; i++)
+  {
+    int newState = !digitalRead(PIN_X0 + i);
+    if (inputStates[i] != newState)
+    {
+      inputStates[i] = newState;
+      reportInputChange(i, inputStates[i]); // 報告輸入狀態變化
+    }
+  }
 }
 
 void handleSerialCommunication()
@@ -332,8 +336,10 @@ void processCommand(const String &command)
   }
 }
 
-void reportTrigger(int pin)
+void reportInputChange(int pin, bool state)
 {
-  Serial.print("Trigger on X");
-  Serial.println(pin);
+  Serial.print("Input change on X");
+  Serial.print(pin);
+  Serial.print(": ");
+  Serial.println(state ? "HIGH" : "LOW");
 }
